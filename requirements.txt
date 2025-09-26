@@ -1,0 +1,15 @@
+# requirements.txt
+streamlit
+pandas
+langchain
+python-dotenv
+langchain-community
+pydantic
+langchain-openai
+langchain-core
+plotly
+langchain-google-genai
+pycountry
+sqlalchemy
+PyMuPDF
+faiss-cpu

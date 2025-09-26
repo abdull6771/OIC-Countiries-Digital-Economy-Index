@@ -1,0 +1,3 @@
+LOAD DATABASE
+    FROM sqlite:///Users/mac/Documents/My_ML_Project/Customer_Review/data/processed/digital_economy.db
+    INTO postgresql://oic_mdwx_user:2MaCeJwy1Yc6tswtiJKJc1UV20Iaclpu@dpg-d35tm4gdl3ps7398k510-a.oregon-postgres.render.com/oic_mdwx?sslmode=require;
