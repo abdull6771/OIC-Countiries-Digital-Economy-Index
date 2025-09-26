@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 
 # LangChain imports for SQL agent
-from langchain.sql_database import SQLDatabase
+from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_openai import ChatOpenAI # Or use GoogleGenerativeAI
 # from src.core.config import COUNTRIES, RAW_DATA_PATH, PROCESSED_DATA_PATH, DB_FILE_PATH

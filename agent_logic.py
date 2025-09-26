@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 
 # LangChain imports
-from langchain.sql_database import SQLDatabase
+from langchain_community.utilities import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_google_genai import GoogleGenerativeAI
 
@@ -20,7 +20,7 @@ def get_llm():
     
     # Initialize and return the LLM instance
     llm = GoogleGenerativeAI(
-        model="gemini-1.5-pro-latest",
+        model="gemini-2.5-flash",
         google_api_key=api_key,
         temperature=0.1,
     )

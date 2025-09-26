@@ -4,21 +4,25 @@ pandas
 plotly
 numpy
 
-# LangChain ecosystem for AI agents and document processing
-langchain
-langchain-community
-langchain-google-genai
-langchain-core
+# LangChain ecosystem - using older stable versions for compatibility
+langchain==0.1.20
+langchain-community==0.0.38
+langchain-google-genai==1.0.6
+langchain-core==0.1.52
+langchain-text-splitters==0.0.1
 
-# Data validation and environment management
-pydantic
+# Data validation - using Pydantic v1 for LangChain compatibility
+pydantic>=1.10.0,<2.0.0
 python-dotenv
 
 # Document processing and PDF handling
 PyMuPDF
 
-# Vector database for embeddings (use numpy-only version for cloud compatibility)
-# faiss-cpu
+# Vector database for embeddings
+faiss-cpu
 
 # Country data and utilities
 pycountry
+
+# Additional requirements for LangChain SQL toolkit
+SQLAlchemy>=1.4.0,<3.0.0

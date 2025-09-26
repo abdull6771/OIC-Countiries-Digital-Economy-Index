@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.express as px
 
 # LangChain imports for the chatbot
-from langchain.sql_database import SQLDatabase
+from langchain_community.utilities import SQLDatabase
 
 # --- Import your modularized functions ---
 from agent_logic import get_llm, get_sql_agent
@@ -89,7 +89,7 @@ with tab1:
         title="ADEI Scores Across OIC Countries"
     )
     fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     st.divider()
 
@@ -100,10 +100,10 @@ with tab1:
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("##### Top 10 Countries by ADEI Rank")
-        st.dataframe(top_10.set_index("adei_rank"), use_container_width=True)
+        st.dataframe(top_10.set_index("adei_rank"), width='stretch')
     with col2:
         st.markdown("##### Bottom 10 Countries by ADEI Rank")
-        st.dataframe(bottom_10.set_index("adei_rank"), use_container_width=True)
+        st.dataframe(bottom_10.set_index("adei_rank"), width='stretch')
 
 # --- Tab 2: Country Profiles ---
 with tab2:
@@ -134,7 +134,7 @@ with tab2:
         with col1:
             st.markdown("##### Performance Radar")
             radar_chart = create_radar_chart(pillars_df)
-            st.plotly_chart(radar_chart, use_container_width=True)
+            st.plotly_chart(radar_chart, width='stretch')
         with col2:
             st.markdown("##### Pillar Scores (Bar Chart)")
             pillars_df_sorted = pillars_df.sort_values(by="total_pillar_score", ascending=False)
@@ -146,10 +146,10 @@ with tab2:
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("##### Pillar Scores (Table)")
-            st.dataframe(pillars_df.style.format({'total_pillar_score': '{:.2f}'}), use_container_width=True, hide_index=True)
+            st.dataframe(pillars_df.style.format({'total_pillar_score': '{:.2f}'}), width='stretch', hide_index=True)
         with col2:
             st.markdown("##### Detailed Indicator Scores")
-            st.dataframe(sub_pillars_df.style.format({'score': '{:.2f}'}), use_container_width=True, hide_index=True, height=400)
+            st.dataframe(sub_pillars_df.style.format({'score': '{:.2f}'}), width='stretch', hide_index=True, height=400)
 
 # --- Tab 3: Compare Countries ---
 with tab3:
@@ -167,7 +167,7 @@ with tab3:
         main_stats_df, pillars_df = get_comparison_data(selected_countries, raw_conn)
 
         st.subheader("Overall Score & Rank Comparison")
-        st.dataframe(main_stats_df.set_index("name"), use_container_width=True)
+        st.dataframe(main_stats_df.set_index("name"), width='stretch')
 
         st.divider()
 
@@ -176,7 +176,7 @@ with tab3:
         st.bar_chart(pivot_df, height=500)
 
         st.markdown("##### Raw Pillar Data Table")
-        st.dataframe(pivot_df.style.format("{:.2f}"), use_container_width=True)
+        st.dataframe(pivot_df.style.format("{:.2f}"), width='stretch')
 
     else:
         st.warning("Please select at least two countries to start the comparison.")

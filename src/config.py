@@ -18,5 +18,5 @@ RAW_DATA_PATH = "/Users/mac/Documents/My_ML_Project/Customer_Review/data/raw/ind
 PROCESSED_DATA_PATH = "/Users/mac/Documents/My_ML_Project/Customer_Review/data/processed/oic_digital_economy_index.json"
 DB_FILE_PATH = "/Users/mac/Documents/My_ML_Project/Customer_Review/data/processed/digital_economy.db"
 # Model configuration
-LLM_MODEL_NAME = "gpt-4o"
+LLM_MODEL_NAME = "gemini-2.5-flash"
 EMBEDDING_MODEL_NAME = "text-embedding-ada-002"
