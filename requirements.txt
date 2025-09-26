@@ -18,7 +18,7 @@ python-dotenv
 PyMuPDF
 
 # Vector database for embeddings (use numpy-only version for cloud compatibility)
-faiss-cpu
+# faiss-cpu
 
 # Country data and utilities
 pycountry

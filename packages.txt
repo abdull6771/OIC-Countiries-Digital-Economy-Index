@@ -1,6 +1,0 @@
-# packages.txt
-
-build-essential
-libpoppler-cpp-dev
-pkg-config
-poppler-utils
