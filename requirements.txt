@@ -26,3 +26,9 @@ pycountry==23.12.11
 
 # Database
 SQLAlchemy==1.4.51
+
+# Statistical analysis (for trendlines in plotly)
+statsmodels>=0.14.0
+
+# Excel parsing
+openpyxl>=3.1.0
