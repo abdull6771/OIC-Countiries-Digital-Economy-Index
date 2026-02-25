@@ -113,7 +113,7 @@ with tab1:
         title="ADEI Scores Across OIC Countries"
     )
     fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     st.divider()
 
@@ -124,10 +124,10 @@ with tab1:
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("##### Top 10 Countries by ADEI Rank")
-        st.dataframe(top_10.set_index("adei_rank"), use_container_width=True)
+        st.dataframe(top_10.set_index("adei_rank"), width="stretch")
     with col2:
         st.markdown("##### Bottom 10 Countries by ADEI Rank")
-        st.dataframe(bottom_10.set_index("adei_rank"), use_container_width=True)
+        st.dataframe(bottom_10.set_index("adei_rank"), width="stretch")
 
     st.divider()
 
@@ -138,9 +138,8 @@ with tab1:
     st.dataframe(
         oic_stats.rename(columns={"pillar_name": "Pillar"})
         .set_index("Pillar")
-        .style.background_gradient(cmap="YlGn", axis=None)
-        .format("{:.1f}"),
-        use_container_width=True,
+        .style.format("{:.1f}"),
+        width="stretch",
     )
 
     st.divider()
@@ -157,7 +156,7 @@ with tab1:
         aspect="auto",
     )
     fig_corr.update_layout(margin={"t": 10, "b": 10})
-    st.plotly_chart(fig_corr, use_container_width=True)
+    st.plotly_chart(fig_corr, width="stretch")
 
 # --- Tab 2: Country Profiles ---
 with tab2:
@@ -188,7 +187,7 @@ with tab2:
         with col1:
             st.markdown("##### Performance Radar")
             radar_chart = create_radar_chart(pillars_df)
-            st.plotly_chart(radar_chart, use_container_width=True)
+            st.plotly_chart(radar_chart, width="stretch")
         with col2:
             st.markdown("##### Pillar Scores (Bar Chart)")
             pillars_df_sorted = pillars_df.sort_values(by="total_pillar_score", ascending=False)
@@ -200,10 +199,10 @@ with tab2:
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("##### Pillar Scores (Table)")
-            st.dataframe(pillars_df.style.format({'total_pillar_score': '{:.2f}'}), use_container_width=True, hide_index=True)
+            st.dataframe(pillars_df.style.format({'total_pillar_score': '{:.2f}'}), width="stretch", hide_index=True)
         with col2:
             st.markdown("##### Detailed Indicator Scores")
-            st.dataframe(sub_pillars_df.style.format({'score': '{:.2f}'}), use_container_width=True, hide_index=True, height=400)
+            st.dataframe(sub_pillars_df.style.format({'score': '{:.2f}'}), width="stretch", hide_index=True, height=400)
 
         st.divider()
 
@@ -246,7 +245,7 @@ with tab2:
                 },
             )
             fig_peer.update_layout(xaxis_tickangle=-30, margin={"t": 10, "b": 100})
-            st.plotly_chart(fig_peer, use_container_width=True)
+            st.plotly_chart(fig_peer, width="stretch")
         else:
             st.info("No regional peers found in the dataset for this country.")
 
@@ -266,7 +265,7 @@ with tab3:
         main_stats_df, pillars_df = get_comparison_data(selected_countries, raw_conn)
 
         st.subheader("Overall Score & Rank Comparison")
-        st.dataframe(main_stats_df.set_index("name"), use_container_width=True)
+        st.dataframe(main_stats_df.set_index("name"), width="stretch")
 
         st.divider()
 
@@ -278,12 +277,12 @@ with tab3:
 
         st.subheader("Pillar Performance Radar — Overlay")
         multi_radar = create_multi_radar_chart(pillars_df)
-        st.plotly_chart(multi_radar, use_container_width=True)
+        st.plotly_chart(multi_radar, width="stretch")
 
         st.divider()
 
         st.markdown("##### Raw Pillar Data Table")
-        st.dataframe(pivot_df.style.format("{:.2f}"), use_container_width=True)
+        st.dataframe(pivot_df.style.format("{:.2f}"), width="stretch")
 
     else:
         st.warning("Please select at least two countries to start the comparison.")
@@ -332,14 +331,14 @@ with tab4:
             coloraxis_showscale=False,
             margin={"t": 10, "b": 120},
         )
-        st.plotly_chart(fig_bar, use_container_width=True)
+        st.plotly_chart(fig_bar, width="stretch")
     with col2:
         st.markdown("##### Full Country Ranking")
         st.dataframe(
             pillar_countries_df.set_index("pillar_rank")
             .rename(columns={"name": "Country", "total_pillar_score": "Score", "adei_rank": "ADEI Rank"})
             .style.format({"Score": "{:.2f}"}),
-            use_container_width=True,
+            width="stretch",
             height=420,
         )
 
@@ -363,7 +362,7 @@ with tab4:
             zmax=100,
         )
         fig_heat.update_layout(margin={"t": 10, "b": 10})
-        st.plotly_chart(fig_heat, use_container_width=True)
+        st.plotly_chart(fig_heat, width="stretch")
 
 
 # --- Tab 5: Geographic Analysis ---
@@ -401,7 +400,7 @@ with tab5:
         labels={"score": metric_label},
     )
     fig_choro.update_layout(margin={"r": 0, "t": 10, "l": 0, "b": 0})
-    st.plotly_chart(fig_choro, use_container_width=True)
+    st.plotly_chart(fig_choro, width="stretch")
 
     st.divider()
 
@@ -418,7 +417,7 @@ with tab5:
             color_discrete_sequence=["#636EFA"],
         )
         fig_hist.update_layout(bargap=0.05, margin={"t": 10})
-        st.plotly_chart(fig_hist, use_container_width=True)
+        st.plotly_chart(fig_hist, width="stretch")
 
     with col2:
         # --- Top / Bottom bar ---
@@ -438,7 +437,7 @@ with tab5:
             labels={"name": "Country", "score": metric_label, "group": ""},
         )
         fig_tb.update_layout(xaxis_tickangle=-45, margin={"t": 10, "b": 120})
-        st.plotly_chart(fig_tb, use_container_width=True)
+        st.plotly_chart(fig_tb, width="stretch")
 
     st.divider()
 
@@ -458,7 +457,7 @@ with tab5:
             color_continuous_scale=px.colors.sequential.Plasma,
         )
         fig_scatter.update_layout(coloraxis_showscale=False, margin={"t": 10})
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        st.plotly_chart(fig_scatter, width="stretch")
 
     st.divider()
 
@@ -482,7 +481,7 @@ with tab5:
         )
         fig_reg.update_traces(texttemplate="%{text:.1f}", textposition="outside")
         fig_reg.update_layout(coloraxis_showscale=False, margin={"t": 10, "l": 10})
-        st.plotly_chart(fig_reg, use_container_width=True)
+        st.plotly_chart(fig_reg, width="stretch")
     with col2:
         st.markdown("##### Regions by Country Count")
         fig_pie = px.pie(
@@ -492,7 +491,7 @@ with tab5:
             hole=0.4,
         )
         fig_pie.update_layout(margin={"t": 10})
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(fig_pie, width="stretch")
 
     st.markdown("##### Average Pillar Scores by Region (Heatmap)")
     reg_pivot = pillar_avg.pivot_table(index="region", columns="pillar_name", values="total_pillar_score")
@@ -504,7 +503,7 @@ with tab5:
         zmin=0, zmax=100,
     )
     fig_reg_heat.update_layout(margin={"t": 10, "b": 10})
-    st.plotly_chart(fig_reg_heat, use_container_width=True)
+    st.plotly_chart(fig_reg_heat, width="stretch")
 
 
 # --- Tab 6: Trends & Progress ---
@@ -538,7 +537,7 @@ with tab6:
         color="pillar_name",
     )
     fig_box.update_layout(showlegend=False, xaxis_tickangle=-30, margin={"t": 10, "b": 120})
-    st.plotly_chart(fig_box, use_container_width=True)
+    st.plotly_chart(fig_box, width="stretch")
 
     st.divider()
 
@@ -581,7 +580,7 @@ with tab6:
         coloraxis_showscale=False,
         margin={"t": 10, "r": 80},
     )
-    st.plotly_chart(fig_ladder, use_container_width=True)
+    st.plotly_chart(fig_ladder, width="stretch")
 
     st.divider()
 
@@ -589,8 +588,8 @@ with tab6:
     oic_stats_t6 = get_oic_aggregate_stats(raw_conn)
     st.dataframe(
         oic_stats_t6.rename(columns={"pillar_name": "Pillar"}).set_index("Pillar")
-        .style.background_gradient(cmap="YlGn", axis=None).format("{:.1f}"),
-        use_container_width=True,
+        .style.format("{:.1f}"),
+        width="stretch",
     )
     st.download_button(
         "⬇️ Download Summary CSV",
@@ -617,9 +616,8 @@ with tab7:
 
     st.dataframe(
         rankings_df.set_index("Rank")
-        .style.background_gradient(subset=["ADEI Score"] + pillar_cols, cmap="YlGn", axis=None)
-        .format({c: "{:.1f}" for c in ["ADEI Score"] + pillar_cols}),
-        use_container_width=True,
+        .style.format({c: "{:.1f}" for c in ["ADEI Score"] + pillar_cols}),
+        width="stretch",
         height=700,
     )
 
