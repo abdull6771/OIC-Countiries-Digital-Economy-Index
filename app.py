@@ -28,12 +28,68 @@ from profile_generator import (
     get_regional_aggregation,
     get_rankings_explorer_data,
     get_country_region,
+    get_gap_analysis_data,
+    generate_swot,
+    get_pillar_key_findings,
+    generate_policy_recommendations,
 )
 st.set_page_config(
     page_title="OIC Digital Economy Dashboard",
     page_icon="📈",
     layout="wide",
- )
+)
+
+# ─── Custom CSS (inspired by IDEI HTML design) ───────────────────────────────
+st.markdown("""
+<style>
+/* KPI card row */
+.kpi-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+.kpi-card{
+    background:#ffffff;border:1px solid #e4e2dc;border-radius:10px;
+    padding:16px 20px;flex:1;min-width:130px;text-align:center;
+    box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+.kpi-card .label{font-size:.58rem;letter-spacing:2px;text-transform:uppercase;
+    color:#8a857c;font-weight:700;margin-bottom:4px}
+.kpi-card .value{font-size:1.65rem;font-weight:700;color:#0f2b5b;line-height:1}
+.kpi-card .value.gold{color:#b8860b}
+.kpi-card .sub{font-size:.6rem;color:#8a857c;margin-top:3px}
+/* Insight callout boxes */
+.insight-box{
+    background:#f0f4ff;border-left:4px solid #2563eb;
+    border-radius:0 8px 8px 0;padding:14px 18px;margin:14px 0;
+}
+.insight-box.gold{
+    background:rgba(184,134,11,.06);border-color:#b8860b;
+}
+.insight-box.red{
+    background:rgba(192,57,43,.05);border-color:#c0392b;
+}
+.insight-box.green{
+    background:rgba(26,122,58,.05);border-color:#1a7a3a;
+}
+.insight-box h4{font-size:.78rem;font-weight:700;color:#0f2b5b;margin-bottom:6px}
+.insight-box.gold h4{color:#8a6508}
+.insight-box ul{margin:0;padding-left:18px}
+.insight-box li{font-size:.78rem;color:#555248;line-height:1.9}
+/* SWOT grid */
+.swot-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;
+    background:#e4e2dc;border-radius:8px;overflow:hidden;margin:14px 0}
+.swot-cell{background:#fff;padding:15px 16px}
+.swot-cell h5{font-size:.66rem;font-weight:700;letter-spacing:1.5px;
+    text-transform:uppercase;margin-bottom:8px}
+.swot-cell ul{margin:0;padding-left:16px;font-size:.78rem;color:#555248;line-height:1.85}
+/* Section title */
+.sec-title{font-size:1.3rem;font-weight:700;color:#0f2b5b;margin-bottom:4px}
+/* Policy priority cards */
+.priority-card{
+    background:rgba(184,134,11,.06);border:1px solid #d4a843;
+    border-radius:8px;padding:16px 20px;margin-bottom:12px;
+}
+.priority-card h4{color:#8a6508;font-size:.9rem;font-weight:700;margin-bottom:8px}
+.priority-card ul{margin:0;padding-left:18px;font-size:.82rem;color:#555248;line-height:1.9}
+</style>
+""", unsafe_allow_html=True)
 
 st.title("📈 Organization of Islamic Cooperation (OIC) Digital Economy Index")
 
@@ -42,12 +98,13 @@ Welcome to the interactive dashboard for the **Digital Economy Index of 57 OIC C
 
 Use the tabs below to explore the data:
 - **🌍 Global Overview:** Leaderboards, world map, OIC aggregate scorecard, and pillar correlation heatmap.
-- **📄 Country Profiles:** Detailed per-country report with strengths & weaknesses and regional peer comparison.
+- **📄 Country Profiles:** KPI cards, SWOT analysis, gap analysis, strengths/weaknesses, and regional peer comparison.
 - **🆚 Compare Countries:** Side-by-side bar charts and radar overlay for multiple countries.
-- **🏛️ Pillar Analysis:** Drill into any of the 9 pillars — rankings, bar chart, and sub-indicator heatmap.
+- **🏛️ Pillar Analysis:** Drill into any of the 9 pillars — rankings, bar chart, sub-indicator heatmap, and key findings.
 - **🗺️ Geographic Analysis:** Choropleth maps, score distributions, and regional aggregation.
 - **📈 Trends & Progress:** 2025 baseline snapshot — box plots, country ladder, and downloadable stats.
 - **🏆 Rankings Explorer:** Sortable full table of all 57 countries across all 9 pillar scores with CSV export.
+- **💻 Policy Recommendations:** Evidence-based strategic priorities auto-generated from each country’s profile.
 - **💬 Chatbot Q&A:** Ask complex questions in plain English backed by the live database.
 """)
 st.divider()
@@ -75,7 +132,7 @@ llm = get_llm()
 agent = get_sql_agent(llm, db_engine)
 
 # --- Create Tabs for Different App Sections ---
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "🌍 Global Overview",
     "📄 Country Profiles",
     "🆚 Compare Countries",
@@ -83,6 +140,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "🗺️ Geographic Analysis",
     "📈 Trends & Progress",
     "🏆 Rankings Explorer",
+    "💻 Policy Recommendations",
     "💬 Chatbot Q&A",
 ])
 
@@ -113,7 +171,7 @@ with tab1:
         title="ADEI Scores Across OIC Countries"
     )
     fig.update_layout(margin={"r":0,"t":30,"l":0,"b":0})
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
 
@@ -124,10 +182,10 @@ with tab1:
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("##### Top 10 Countries by ADEI Rank")
-        st.dataframe(top_10.set_index("adei_rank"), width="stretch")
+        st.dataframe(top_10.set_index("adei_rank"), use_container_width=True)
     with col2:
         st.markdown("##### Bottom 10 Countries by ADEI Rank")
-        st.dataframe(bottom_10.set_index("adei_rank"), width="stretch")
+        st.dataframe(bottom_10.set_index("adei_rank"), use_container_width=True)
 
     st.divider()
 
@@ -139,7 +197,7 @@ with tab1:
         oic_stats.rename(columns={"pillar_name": "Pillar"})
         .set_index("Pillar")
         .style.format("{:.1f}"),
-        width="stretch",
+        use_container_width=True,
     )
 
     st.divider()
@@ -156,7 +214,7 @@ with tab1:
         aspect="auto",
     )
     fig_corr.update_layout(margin={"t": 10, "b": 10})
-    st.plotly_chart(fig_corr, width="stretch")
+    st.plotly_chart(fig_corr, use_container_width=True)
 
 # --- Tab 2: Country Profiles ---
 with tab2:
@@ -175,11 +233,40 @@ with tab2:
         main_stats, pillars_df, sub_pillars_df = profile_data["main_stats"], profile_data["pillars_df"], profile_data["sub_pillars_df"]
 
         st.markdown(f"## Profile for: **{selected_country}**")
-        
-        col1, col2 = st.columns(2)
-        col1.metric("Overall ADEI Score", int(main_stats['adei_score'].iloc[0]))
-        col2.metric("Overall ADEI Rank", f"#{int(main_stats['adei_rank'].iloc[0])}")
-        
+
+        # ── Styled KPI card row ──────────────────────────────────────────────
+        adei_score = int(main_stats['adei_score'].iloc[0])
+        adei_rank  = int(main_stats['adei_rank'].iloc[0])
+        n_pillars  = len(pillars_df)
+        top_pillar_row = pillars_df.loc[pillars_df['total_pillar_score'].idxmax()]
+        top_pillar_lbl = top_pillar_row['pillar_name'].split(": ", 1)[-1] if ": " in top_pillar_row['pillar_name'] else top_pillar_row['pillar_name']
+        top_pillar_score = top_pillar_row['total_pillar_score']
+
+        st.markdown(f"""
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="label">ADEI Score</div>
+    <div class="value">{adei_score}</div>
+    <div class="sub">/ 100</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">OIC Rank</div>
+    <div class="value gold">#{adei_rank}</div>
+    <div class="sub">out of 57</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">Pillars Assessed</div>
+    <div class="value">{n_pillars}</div>
+    <div class="sub">dimensions</div>
+  </div>
+  <div class="kpi-card">
+    <div class="label">Strongest Pillar</div>
+    <div class="value" style="font-size:1.1rem">{top_pillar_lbl[:18]}</div>
+    <div class="sub">{top_pillar_score:.0f} / 100</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
         st.divider()
         
         st.subheader("Pillar Performance Analysis")
@@ -187,7 +274,7 @@ with tab2:
         with col1:
             st.markdown("##### Performance Radar")
             radar_chart = create_radar_chart(pillars_df)
-            st.plotly_chart(radar_chart, width="stretch")
+            st.plotly_chart(radar_chart, use_container_width=True)
         with col2:
             st.markdown("##### Pillar Scores (Bar Chart)")
             pillars_df_sorted = pillars_df.sort_values(by="total_pillar_score", ascending=False)
@@ -199,10 +286,10 @@ with tab2:
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("##### Pillar Scores (Table)")
-            st.dataframe(pillars_df.style.format({'total_pillar_score': '{:.2f}'}), width="stretch", hide_index=True)
+            st.dataframe(pillars_df.style.format({'total_pillar_score': '{:.2f}'}), use_container_width=True, hide_index=True)
         with col2:
             st.markdown("##### Detailed Indicator Scores")
-            st.dataframe(sub_pillars_df.style.format({'score': '{:.2f}'}), width="stretch", hide_index=True, height=400)
+            st.dataframe(sub_pillars_df.style.format({'score': '{:.2f}'}), use_container_width=True, hide_index=True, height=400)
 
         st.divider()
 
@@ -245,9 +332,71 @@ with tab2:
                 },
             )
             fig_peer.update_layout(xaxis_tickangle=-30, margin={"t": 10, "b": 100})
-            st.plotly_chart(fig_peer, width="stretch")
+            st.plotly_chart(fig_peer, use_container_width=True)
         else:
             st.info("No regional peers found in the dataset for this country.")
+
+        st.divider()
+
+        # ── SWOT Analysis ────────────────────────────────────────────────────
+        st.subheader("SWOT Analysis")
+        swot = generate_swot(selected_country, raw_conn)
+        if swot:
+            def _li(items):
+                return "".join(f"<li>{i}</li>" for i in items)
+            st.markdown(f"""
+<div class="swot-grid">
+  <div class="swot-cell" style="border-bottom:1px solid #e4e2dc">
+    <h5 style="color:#1a7a3a">✅ Strengths</h5>
+    <ul>{_li(swot['strengths']['items'])}</ul>
+  </div>
+  <div class="swot-cell" style="border-bottom:1px solid #e4e2dc;border-left:1px solid #e4e2dc">
+    <h5 style="color:#c0392b">⚠️ Weaknesses</h5>
+    <ul>{_li(swot['weaknesses']['items'])}</ul>
+  </div>
+  <div class="swot-cell">
+    <h5 style="color:#2563eb">🚀 Opportunities</h5>
+    <ul>{_li(swot['opportunities']['items'])}</ul>
+  </div>
+  <div class="swot-cell" style="border-left:1px solid #e4e2dc">
+    <h5 style="color:#b8860b">🛡️ Threats</h5>
+    <ul>{_li(swot['threats']['items'])}</ul>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+        st.divider()
+
+        # ── Gap Analysis chart ───────────────────────────────────────────────
+        st.subheader("Gap Analysis vs Top-5 OIC Average")
+        gap_df = get_gap_analysis_data(selected_country, raw_conn)
+        if not gap_df.empty:
+            gap_long = gap_df.melt(
+                id_vars='pillar_name',
+                value_vars=['country_score', 'top5_avg', 'oic_avg'],
+                var_name='Series',
+                value_name='Score',
+            )
+            gap_long['Series'] = gap_long['Series'].map({
+                'country_score': selected_country,
+                'top5_avg': 'Top-5 OIC Average',
+                'oic_avg': 'OIC Average',
+            })
+            fig_gap = px.bar(
+                gap_long,
+                x='pillar_name',
+                y='Score',
+                color='Series',
+                barmode='group',
+                color_discrete_map={
+                    selected_country: '#0f2b5b',
+                    'Top-5 OIC Average': '#b8860b',
+                    'OIC Average': '#adb5bd',
+                },
+                labels={'pillar_name': 'Pillar', 'Score': 'Score', 'Series': ''},
+            )
+            fig_gap.update_layout(xaxis_tickangle=-30, margin={'t': 10, 'b': 100})
+            st.plotly_chart(fig_gap, use_container_width=True)
 
 # --- Tab 3: Compare Countries ---
 with tab3:
@@ -267,7 +416,7 @@ with tab3:
         main_stats_df, pillars_df = get_comparison_data(selected_countries, raw_conn)
 
         st.subheader("Overall Score & Rank Comparison")
-        st.dataframe(main_stats_df.set_index("name"), width="stretch")
+        st.dataframe(main_stats_df.set_index("name"), use_container_width=True)
 
         st.divider()
 
@@ -279,12 +428,12 @@ with tab3:
 
         st.subheader("Pillar Performance Radar — Overlay")
         multi_radar = create_multi_radar_chart(pillars_df)
-        st.plotly_chart(multi_radar, width="stretch")
+        st.plotly_chart(multi_radar, use_container_width=True)
 
         st.divider()
 
         st.markdown("##### Raw Pillar Data Table")
-        st.dataframe(pivot_df.style.format("{:.2f}"), width="stretch")
+        st.dataframe(pivot_df.style.format("{:.2f}"), use_container_width=True)
 
     else:
         st.warning("Please select at least two countries to start the comparison.")
@@ -333,14 +482,14 @@ with tab4:
             coloraxis_showscale=False,
             margin={"t": 10, "b": 120},
         )
-        st.plotly_chart(fig_bar, width="stretch")
+        st.plotly_chart(fig_bar, use_container_width=True)
     with col2:
         st.markdown("##### Full Country Ranking")
         st.dataframe(
             pillar_countries_df.set_index("pillar_rank")
             .rename(columns={"name": "Country", "total_pillar_score": "Score", "adei_rank": "ADEI Rank"})
             .style.format({"Score": "{:.2f}"}),
-            width="stretch",
+            use_container_width=True,
             height=420,
         )
 
@@ -364,10 +513,23 @@ with tab4:
             zmax=100,
         )
         fig_heat.update_layout(margin={"t": 10, "b": 10})
-        st.plotly_chart(fig_heat, width="stretch")
+        st.plotly_chart(fig_heat, use_container_width=True)
 
+    # ── Key Findings insight box ─────────────────────────────────────────────
+    findings = get_pillar_key_findings(selected_pillar_full, raw_conn)
+    if findings:
+        st.markdown(f"""
+<div class="insight-box">
+  <h4>🔍 Key Findings — {selected_pillar_label}</h4>
+  <ul>
+    <li><strong>Top scorer:</strong> {findings['top_scorer']} ({findings['top_score']:.0f} / 100)</li>
+    <li><strong>OIC average:</strong> {findings['oic_avg']:.1f} — {findings['above_avg']} of {findings['n']} countries score above average</li>
+    <li><strong>Lowest scorer:</strong> {findings['lowest_scorer']} ({findings['lowest_score']:.0f} / 100)</li>
+    <li><strong>Score spread:</strong> {findings['top_score'] - findings['lowest_score']:.0f} points between top and bottom — reflects uneven digital development</li>
+  </ul>
+</div>
+""", unsafe_allow_html=True)
 
-# --- Tab 5: Geographic Analysis ---
 with tab5:
     st.header("Geographic Analysis of the OIC Digital Economy")
 
@@ -402,7 +564,7 @@ with tab5:
         labels={"score": metric_label},
     )
     fig_choro.update_layout(margin={"r": 0, "t": 10, "l": 0, "b": 0})
-    st.plotly_chart(fig_choro, width="stretch")
+    st.plotly_chart(fig_choro, use_container_width=True)
 
     st.divider()
 
@@ -419,7 +581,7 @@ with tab5:
             color_discrete_sequence=["#636EFA"],
         )
         fig_hist.update_layout(bargap=0.05, margin={"t": 10})
-        st.plotly_chart(fig_hist, width="stretch")
+        st.plotly_chart(fig_hist, use_container_width=True)
 
     with col2:
         # --- Top / Bottom bar ---
@@ -439,7 +601,7 @@ with tab5:
             labels={"name": "Country", "score": metric_label, "group": ""},
         )
         fig_tb.update_layout(xaxis_tickangle=-45, margin={"t": 10, "b": 120})
-        st.plotly_chart(fig_tb, width="stretch")
+        st.plotly_chart(fig_tb, use_container_width=True)
 
     st.divider()
 
@@ -459,7 +621,7 @@ with tab5:
             color_continuous_scale=px.colors.sequential.Plasma,
         )
         fig_scatter.update_layout(coloraxis_showscale=False, margin={"t": 10})
-        st.plotly_chart(fig_scatter, width="stretch")
+        st.plotly_chart(fig_scatter, use_container_width=True)
 
     st.divider()
 
@@ -483,7 +645,7 @@ with tab5:
         )
         fig_reg.update_traces(texttemplate="%{text:.1f}", textposition="outside")
         fig_reg.update_layout(coloraxis_showscale=False, margin={"t": 10, "l": 10})
-        st.plotly_chart(fig_reg, width="stretch")
+        st.plotly_chart(fig_reg, use_container_width=True)
     with col2:
         st.markdown("##### Regions by Country Count")
         fig_pie = px.pie(
@@ -493,7 +655,7 @@ with tab5:
             hole=0.4,
         )
         fig_pie.update_layout(margin={"t": 10})
-        st.plotly_chart(fig_pie, width="stretch")
+        st.plotly_chart(fig_pie, use_container_width=True)
 
     st.markdown("##### Average Pillar Scores by Region (Heatmap)")
     reg_pivot = pillar_avg.pivot_table(index="region", columns="pillar_name", values="total_pillar_score")
@@ -505,7 +667,7 @@ with tab5:
         zmin=0, zmax=100,
     )
     fig_reg_heat.update_layout(margin={"t": 10, "b": 10})
-    st.plotly_chart(fig_reg_heat, width="stretch")
+    st.plotly_chart(fig_reg_heat, use_container_width=True)
 
 
 # --- Tab 6: Trends & Progress ---
@@ -539,7 +701,7 @@ with tab6:
         color="pillar_name",
     )
     fig_box.update_layout(showlegend=False, xaxis_tickangle=-30, margin={"t": 10, "b": 120})
-    st.plotly_chart(fig_box, width="stretch")
+    st.plotly_chart(fig_box, use_container_width=True)
 
     st.divider()
 
@@ -582,7 +744,7 @@ with tab6:
         coloraxis_showscale=False,
         margin={"t": 10, "r": 80},
     )
-    st.plotly_chart(fig_ladder, width="stretch")
+    st.plotly_chart(fig_ladder, use_container_width=True)
 
     st.divider()
 
@@ -591,7 +753,7 @@ with tab6:
     st.dataframe(
         oic_stats_t6.rename(columns={"pillar_name": "Pillar"}).set_index("Pillar")
         .style.format("{:.1f}"),
-        width="stretch",
+        use_container_width=True,
     )
     st.download_button(
         "⬇️ Download Summary CSV",
@@ -619,7 +781,7 @@ with tab7:
     st.dataframe(
         rankings_df.set_index("Rank")
         .style.format({c: "{:.1f}" for c in ["ADEI Score"] + pillar_cols}),
-        width="stretch",
+        use_container_width=True,
         height=700,
     )
 
@@ -631,8 +793,52 @@ with tab7:
     )
 
 
-# --- Tab 8: Chatbot Q&A ---
+# --- Tab 8: Policy Recommendations ---
 with tab8:
+    st.header("Policy Recommendations")
+    st.markdown("Evidence-based strategic priorities auto-generated from each country's pillar performance relative to OIC averages.")
+
+    country_list_pol = get_country_list(raw_conn)
+    pol_country = st.selectbox(
+        "Select a country:",
+        options=country_list_pol,
+        index=country_list_pol.index("United Arab Emirates") if "United Arab Emirates" in country_list_pol else 0,
+        key="pol_country",
+    )
+
+    recos = generate_policy_recommendations(pol_country, raw_conn)
+    if recos:
+        st.markdown(f"### Top 5 Priority Areas for **{pol_country}**")
+        for r in recos:
+            li_html = "".join(f"<li>{a}</li>" for a in r['actions'])
+            gap_label = f"{r['gap']:+.1f} pts vs OIC avg" if r['gap'] > 0 else "Above OIC average"
+            st.markdown(f"""
+<div class="priority-card">
+  <h4>Priority {r['priority']}: {r['pillar']}
+    <span style="font-weight:400;font-size:.78rem;color:#8a6508;margin-left:10px">
+      Score {r['country_score']:.0f} · OIC avg {r['oic_avg']:.0f} · {gap_label}
+    </span>
+  </h4>
+  <ul>{li_html}</ul>
+</div>
+""", unsafe_allow_html=True)
+    else:
+        st.info("No data available for the selected country.")
+
+    st.markdown("""
+<div class="insight-box gold">
+  <h4>ℹ️ Methodology Note</h4>
+  <ul>
+    <li>Priorities are ranked by the size of the gap between the country's pillar score and the OIC average.</li>
+    <li>Action items are curated based on international digital economy best practices.</li>
+    <li>For a comprehensive strategy, complement with country-specific qualitative assessment.</li>
+  </ul>
+</div>
+""", unsafe_allow_html=True)
+
+
+# --- Tab 9: Chatbot Q&A ---
+with tab9:
     st.header("Ask Questions to the Digital Economy Database")
 
     if "qa_messages" not in st.session_state:

@@ -419,3 +419,193 @@ def get_rankings_explorer_data(db_connection):
     base_cols = ['Country', 'Rank', 'ADEI Score']
     ordered_cols = base_cols + [c for c in pillar_order if c in pivot.columns]
     return pivot[ordered_cols]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# HTML-feature helpers (Gap Analysis, SWOT, Key Findings, Policy Recs)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_gap_analysis_data(country_name, db_connection):
+    """Returns country pillar scores vs Top-5 OIC average and overall OIC average per pillar."""
+    query = """
+    SELECT c.name, p.pillar_name, p.total_pillar_score
+    FROM pillars p
+    JOIN countries c ON p.country_id = c.id;
+    """
+    df = pd.read_sql_query(query, db_connection)
+    df['pillar_name'] = df['pillar_name'].str.replace(r'^\w+\sPillar:\s', '', regex=True)
+
+    oic_avg = df.groupby('pillar_name')['total_pillar_score'].mean().reset_index()
+    oic_avg.columns = ['pillar_name', 'oic_avg']
+
+    top5_avg = (
+        df.groupby('pillar_name')
+        .apply(lambda g: g.nlargest(5, 'total_pillar_score')['total_pillar_score'].mean())
+        .reset_index()
+    )
+    top5_avg.columns = ['pillar_name', 'top5_avg']
+
+    country_df = df[df['name'] == country_name][['pillar_name', 'total_pillar_score']].copy()
+    country_df.columns = ['pillar_name', 'country_score']
+
+    merged = country_df.merge(top5_avg, on='pillar_name').merge(oic_avg, on='pillar_name')
+    return merged
+
+
+def generate_swot(country_name, db_connection):
+    """Generates a dynamic SWOT analysis based on pillar scores vs OIC averages."""
+    query = """
+    SELECT c.name, p.pillar_name, p.total_pillar_score, c.adei_score, c.adei_rank
+    FROM pillars p
+    JOIN countries c ON p.country_id = c.id;
+    """
+    df = pd.read_sql_query(query, db_connection)
+    df['pillar_short'] = df['pillar_name'].str.replace(r'^\w+\sPillar:\s', '', regex=True)
+
+    oic_avg = df.groupby('pillar_short')['total_pillar_score'].mean()
+    country_df = df[df['name'] == country_name].copy()
+    if country_df.empty:
+        return {}
+
+    adei_rank = int(country_df['adei_rank'].iloc[0])
+    n_countries = df['name'].nunique()
+    country_pillars = country_df.set_index('pillar_short')['total_pillar_score']
+
+    # Align oic_avg index to country_pillars to avoid "identically-labeled" error
+    oic_avg = oic_avg.reindex(country_pillars.index)
+
+    high_pillars = country_pillars[country_pillars >= oic_avg + 5].sort_values(ascending=False)
+    low_pillars = country_pillars[country_pillars < oic_avg - 5].sort_values()
+    closable = country_pillars[
+        (country_pillars >= oic_avg - 10) & (country_pillars < oic_avg)
+    ].sort_values(ascending=False)
+
+    swot = {
+        "strengths": {
+            "items": [f"{p}: {v:.0f} (OIC avg {oic_avg[p]:.0f})" for p, v in high_pillars.items()]
+                     or [f"Rank #{adei_rank} out of {n_countries} OIC nations"],
+        },
+        "weaknesses": {
+            "items": [f"{p}: {v:.0f} (OIC avg {oic_avg[p]:.0f})" for p, v in low_pillars.items()]
+                     or ["No major underperforming pillar identified"],
+        },
+        "opportunities": {
+            "items": [
+                f"{p} — close the {oic_avg[p] - country_pillars[p]:.0f}-pt gap to OIC average"
+                for p in closable.index
+            ] or ["Adopt digital best-practices from top-quartile OIC peers"],
+        },
+        "threats": {
+            "items": [
+                f"{n_countries - adei_rank} OIC countries ranked higher" if adei_rank > 1
+                else "Maintaining top position requires continued investment",
+                "Rapidly evolving tech may widen digital divides if investment lags",
+            ],
+        },
+    }
+    return swot
+
+
+def get_pillar_key_findings(pillar_full_name, db_connection):
+    """Returns top scorer, OIC average, and laggard for a given pillar."""
+    query = """
+    SELECT c.name, p.total_pillar_score
+    FROM pillars p
+    JOIN countries c ON p.country_id = c.id
+    WHERE p.pillar_name = ?
+    ORDER BY p.total_pillar_score DESC;
+    """
+    df = pd.read_sql_query(query, db_connection, params=(pillar_full_name,))
+    if df.empty:
+        return {}
+    oic_mean = df['total_pillar_score'].mean()
+    return {
+        "top_scorer": df.iloc[0]['name'],
+        "top_score": round(df.iloc[0]['total_pillar_score'], 1),
+        "oic_avg": round(oic_mean, 1),
+        "lowest_scorer": df.iloc[-1]['name'],
+        "lowest_score": round(df.iloc[-1]['total_pillar_score'], 1),
+        "above_avg": int((df['total_pillar_score'] >= oic_mean).sum()),
+        "n": len(df),
+    }
+
+
+def generate_policy_recommendations(country_name, db_connection):
+    """Evidence-based policy priorities based on weakest pillars vs OIC averages."""
+    query = """
+    SELECT c.name, p.pillar_name, p.total_pillar_score
+    FROM pillars p
+    JOIN countries c ON p.country_id = c.id;
+    """
+    df = pd.read_sql_query(query, db_connection)
+    df['pillar_short'] = df['pillar_name'].str.replace(r'^\w+\sPillar:\s', '', regex=True)
+
+    oic_avg = df.groupby('pillar_short')['total_pillar_score'].mean()
+    country_df = df[df['name'] == country_name].copy()
+    if country_df.empty:
+        return []
+
+    country_pillars = country_df.set_index('pillar_short')['total_pillar_score']
+    gaps = (oic_avg - country_pillars).sort_values(ascending=False)
+
+    actions_map = {
+        "Institutions": [
+            "Strengthen ICT regulatory frameworks and e-commerce legislation.",
+            "Establish an independent digital-economy oversight authority.",
+            "Improve transparency in government digital procurement processes.",
+        ],
+        "Infrastructure": [
+            "Accelerate rollout of 5G and fibre-optic broadband networks.",
+            "Invest in national data-centre infrastructure and sovereign cloud.",
+            "Close the rural–urban connectivity gap through subsidised schemes.",
+        ],
+        "Workforce": [
+            "Launch national digital-literacy campaigns targeting all demographics.",
+            "Reform STEM curricula to emphasise coding, AI, and data skills.",
+            "Create public–private apprenticeship programmes in tech sectors.",
+        ],
+        "E-Government": [
+            "Migrate citizen services to a unified digital-government portal.",
+            "Implement inter-agency data-sharing and API-first architecture.",
+            "Promote mobile-first government service delivery.",
+        ],
+        "Innovation": [
+            "Increase R&D expenditure to at least 1 % of GDP.",
+            "Establish technology parks and startup incubators.",
+            "Introduce open-data policies to stimulate private innovation.",
+        ],
+        "Future Technologies": [
+            "Publish a national AI strategy with clear milestones.",
+            "Fund pilot projects in blockchain, IoT, and quantum computing.",
+            "Partner with leading global research institutions on emerging tech.",
+        ],
+        "Market Development and Sophistication": [
+            "Streamline business registration and reduce digital trade barriers.",
+            "Promote e-commerce adoption among SMEs through tax incentives.",
+            "Attract FDI in the digital and knowledge economy sectors.",
+        ],
+        "Financial Market Development": [
+            "Expand fintech regulatory sandboxes to accelerate innovation.",
+            "Increase financial inclusion through mobile-money infrastructure.",
+            "Introduce digital-identity frameworks to support online banking.",
+        ],
+        "Sustainable Development Goals": [
+            "Align the national digital strategy with UN SDG targets.",
+            "Use digital tools to monitor and report on ESG commitments.",
+            "Invest in green-tech and smart-city solutions.",
+        ],
+    }
+
+    recos = []
+    for i, (pillar, gap) in enumerate(gaps.head(5).items(), start=1):
+        score = country_pillars.get(pillar, 0)
+        avg = oic_avg.get(pillar, 0)
+        recos.append({
+            "priority": i,
+            "pillar": pillar,
+            "gap": round(float(gap), 1),
+            "country_score": round(float(score), 1),
+            "oic_avg": round(float(avg), 1),
+            "actions": actions_map.get(pillar, ["Develop a targeted improvement plan for this pillar."]),
+        })
+    return recos
