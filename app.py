@@ -255,10 +255,12 @@ with tab3:
     
     country_list_for_compare = get_country_list(raw_conn)
     
+    _preferred_defaults = ["United Arab Emirates", "Saudi Arabia", "Malaysia", "Turkey"]
+    _safe_defaults = [c for c in _preferred_defaults if c in country_list_for_compare]
     selected_countries = st.multiselect(
         "Select two or more countries to compare:",
         options=country_list_for_compare,
-        default=["United Arab Emirates", "Saudi Arabia", "Malaysia", "Turkey"]
+        default=_safe_defaults,
     )
 
     if len(selected_countries) >= 2:
